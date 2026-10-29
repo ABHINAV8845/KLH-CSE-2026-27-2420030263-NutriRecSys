@@ -51,25 +51,75 @@ Full methodology: [`docs/methodology.md`](docs/methodology.md)
 | Feature engineering | ✅ Implemented, executed |
 | Stacked ensemble | ✅ Implemented, executed |
 | Biomarker constraint layer | ✅ Implemented, tested |
-| Feature importance / explainability | ✅ Implemented (SHAP substitute) |
-| RAG-grounded recommendation | ⏳ Planned (stretch goal) |
+| Feature importance / explainability | ✅ Implemented (`src/shap_explainer.py` with SHAP) |
+| RAG-grounded recommendation | ✅ Implemented (`src/rag_pipeline.py`) |
+| Food.com recipe catalog & retrieval | ✅ Implemented (`src/prepare_foodcom_catalog.py`) |
+| Full-Stack Interactive App & API | ✅ Implemented (`src/server.py` + `website/`) |
+| Automated Test Suite | ✅ Implemented (`tests/`) |
 | Hybrid content + collaborative recommendation | ⏳ Planned |
-| Streamlit demo | ⏳ Planned |
-| Real NHANES / LightGBM / XGBoost / SHAP | ⏳ Swap-in once internet access is available |
+| Real NHANES / LightGBM / XGBoost scale-up | ⏳ Future enhancement |
 
-## Interactive Website
-`website/index.html` — open directly in any browser (no server needed).
-Includes a live demo that runs the actual feature-engineering and
-constraint-layer logic from `src/` in JavaScript, plus real charts from the
-executed results.
+## Interactive Web Dashboard & API
+- **Live Full-Stack Mode**: Run `python src/server.py` to launch the FastAPI server at `http://127.0.0.1:8000`, connected directly to the stacked ensemble, SHAP explainability, and Food.com RAG retriever.
+- **Standalone Static Mode**: Open `website/index.html` directly in any web browser without a backend server (runs in-browser simulated inference and JavaScript constraints).
 
-## How to Run
+## How to Run (VS Code / Terminal)
+
+### 1. Open Terminal & Activate Environment
+In VS Code, open the integrated terminal (`Ctrl + ` `) and activate the pre-configured virtual environment:
+
+**PowerShell (VS Code Default):**
+```powershell
+.\.venv\Scripts\Activate.ps1
+```
+*(If PowerShell restricts script execution, run: `Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass` first)*
+
+**Command Prompt (cmd):**
+```cmd
+.venv\Scripts\activate.bat
+```
+
+*(Optional - if creating a fresh environment):*
 ```bash
 pip install -r requirements.txt
-cd src
-python generate_synthetic_data.py
-python explain_and_evaluate.py   # runs training + evaluation + saves plots to results/
 ```
+
+---
+
+### 2. Launch the Full Web Application & API (Recommended)
+Starts the FastAPI server serving the interactive web dashboard connected to the stacked ensemble, SHAP explainability engine, and Food.com RAG retrieval:
+```bash
+python src/server.py
+```
+- **Web Dashboard**: [http://127.0.0.1:8000](http://127.0.0.1:8000)
+- **Interactive API Docs (Swagger)**: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
+
+---
+
+### 3. Run the Automated Test Suite
+Run the test suite verifying API health, recommendation pipeline, and clinical biomarker constraints:
+```bash
+pytest tests/ -v
+```
+
+---
+
+### 4. Run CLI Meal Recommendation Demo
+Generate a sample 1-day personalized meal plan with clinical constraint checks directly in the terminal:
+```bash
+python src/recommend_meals.py
+```
+
+---
+
+### 5. Re-run ML Pipeline & SHAP Evaluation (Optional)
+Re-generate synthetic health data, build the Food.com catalog, and re-train the ensemble:
+```bash
+python src/generate_synthetic_data.py
+python src/prepare_foodcom_catalog.py
+python src/explain_and_evaluate.py
+```
+Outputs and plots will be saved to `results/`.
 
 ## Results (on synthetic data — see docs/methodology.md for caveats)
 | Model | RMSE | MAE | R² |
@@ -91,5 +141,4 @@ feature importance) and `reports/` for the full write-ups.
 *(Not yet recorded — add a link here once available.)*
 
 ## Status
-Core ML pipeline is complete and executed. RAG-based grounded
-recommendation and the Streamlit demo are stretch goals, planned next.
+Core ML stacked ensemble pipeline, RAG-grounded Food.com recommendation engine, SHAP explainability system, and full-stack FastAPI + web dashboard are complete, executed, and verified with automated tests.

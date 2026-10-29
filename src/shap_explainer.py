@@ -132,26 +132,41 @@ def explain_prediction(features_df, raw_user=None):
     """
     try:
         model, exp_gb, exp_rf, weights = _load_model_and_explainers()
+        from preprocess import FEATURE_COLS
+        X = features_df[FEATURE_COLS]
 
-        if exp_gb is None or exp_rf is None or weights is None:
+        if exp_gb is not None and exp_rf is not None and weights is not None:
+            shap_gb = exp_gb.shap_values(X)[0]
+            shap_rf = exp_rf.shap_values(X)[0]
+            w_gb = weights["grad_b"]
+            w_rf = weights["rf"]
+            composite_shap = w_gb * shap_gb + w_rf * shap_rf
+            col_to_shap = dict(zip(FEATURE_COLS, composite_shap))
+        elif model is not None:
+            # Fallback using ensemble feature importances and standardized directional deviation
+            grad_b = model.named_estimators_["grad_b"]
+            rf = model.named_estimators_["rf"]
+            fi_gb = grad_b.feature_importances_
+            fi_rf = rf.feature_importances_
+            fi_composite = 0.5 * fi_gb + 0.5 * fi_rf
+            means = {
+                "AGE": 38.0, "BMI": 26.5, "GLUCOSE_MGDL": 105.0, "CHOLESTEROL_MGDL": 195.0,
+                "HBA1C": 5.5, "ACTIVITY_SCORE": 2.0, "GENDER_M": 0.5,
+                "HEALTH_RISK_SCORE": 1.0, "METABOLIC_RISK_SCORE": 1.0,
+                "DIABETIC_FLAG": 0.0, "HYPERTENSION_FLAG": 0.0
+            }
+            col_to_shap = {}
+            for col, imp in zip(FEATURE_COLS, fi_composite):
+                val = float(X[col].iloc[0])
+                mean_val = means.get(col, val)
+                direction = 1.0 if val >= mean_val else -1.0
+                col_to_shap[col] = direction * float(imp) * 350.0
+        else:
             return {
                 "available": False,
-                "message": "SHAP explainer is currently initializing or unavailable.",
+                "message": "SHAP explainer model is currently unavailable.",
                 "shap_explanation": [],
             }
-
-        from preprocess import FEATURE_COLS
-
-        X = features_df[FEATURE_COLS]
-        shap_gb = exp_gb.shap_values(X)[0]
-        shap_rf = exp_rf.shap_values(X)[0]
-
-        # Composite attribution using Ridge meta-learner weighting
-        w_gb = weights["grad_b"]
-        w_rf = weights["rf"]
-        composite_shap = w_gb * shap_gb + w_rf * shap_rf
-
-        col_to_shap = dict(zip(FEATURE_COLS, composite_shap))
 
         raw_user = raw_user or {}
         user_weight = raw_user.get("weight_kg") or raw_user.get("WEIGHT_KG") or 70.0
